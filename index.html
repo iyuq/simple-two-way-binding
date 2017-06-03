@@ -29,6 +29,7 @@
             });
             node.value = vm.data[name];
             node.removeAttribute(attr[i]);
+            new Watcher(vm, node, name);
           }
         }
       }
@@ -95,7 +96,11 @@
     Watcher.prototype = {
       update(){
         this.get();
-        this.node.nodeValue = this.value;
+        if(this.node.nodeType == 1){
+          this.node.value = this.value;
+        }else if(this.node.nodeType == 3){
+          this.node.nodeValue = this.value;
+        }
       },
       get(){
         this.value = this.vm.data[this.name];
@@ -120,7 +125,7 @@
     {{ hello }}
   </div>
   <script type="text/javascript">
-      new Vue({
+      var vue = new Vue({
         el: '#app',
         data: {
           hello: "world"
