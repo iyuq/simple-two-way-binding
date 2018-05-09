@@ -14,7 +14,7 @@
       }
       return flag;
     }
-    
+
     // compile node with directives
     function compile(node, vm) {
       var reg = /\{\{(.*)\}\}/;
@@ -24,7 +24,7 @@
         for (var i = 0; i < attr.length; i++) {
           if (attr[i].nodeName == 'v-model') {
             var name = attr[i].nodeValue;
-            node.addEventListener('input', function(eve) {
+            node.addEventListener('input', function (eve) {
               vm.data[name] = eve.target.value;
             });
             node.value = vm.data[name];
@@ -43,70 +43,77 @@
     }
 
     // define reactive function
-    function defineReactive(obj, key, val){
+    function defineReactive(obj, key, val) {
       let dep = new Dep();
       Object.defineProperty(obj, key, {
         enumerable: true,
         configurable: true,
-        get(){
-          if(Dep.target) dep.addSub(Dep.target);
+        get() {
+          if (Dep.target) dep.addWatcher(Dep.target);
           return val;
         },
-        set(newVal){
-          if(val == newVal) return;
+        set(newVal) {
+          if (val == newVal) {
+            return;
+          }
           val = newVal;
           dep.notify();
-          return val;
         }
       })
     }
-    
+
     // define a new reactive object from obj
-    function obeserve(obj, vm){
+    function obeserve(obj, vm) {
       Object.keys(obj).forEach(key => {
         defineReactive(vm.data, key, obj[key]);
       })
     }
 
-    function Dep(){
-      this.subs = [];
-    }
+    class Dep {
+      constructor() {
+        this._watcher_ids_ = {};
+        this.watchers = [];
+      }
 
-    Dep.target = null;
-    Dep.prototype = {
-      addSub(sub){
-        this.subs.push(sub);
-      },
-      notify(){
-        this.subs.forEach(sub => {
-          sub.update();
+      addWatcher(watcher) {
+        if(!this._watcher_ids_[watcher.id]) {
+          this._watcher_ids_[watcher.id] = true;
+          this.watchers.push(watcher);
+        }
+      }
+
+      notify() {
+        this.watchers.forEach(watcher => {
+          watcher.update();
         });
-      }    
+      }
     }
 
-    function Watcher(vm, node, name){
-      Dep.target = this;
-      this.name = name;
-      this.node = node;
-      this.vm = vm;
-      this.update();
-      Dep.target = null;
-    }
+    let id = 1;
 
-    Watcher.prototype = {
-      update(){
+    class Watcher {
+      constructor(vm, node, name) {
+        this.id = id++;
+        Dep.target = this;
+        this.name = name;
+        this.node = node;
+        this.vm = vm;
+        this.update();
+        Dep.target = null;
+      }
+      update() {
         this.get();
-        if(this.node.nodeType == 1){
+        if (this.node.nodeType == 1) {
           this.node.value = this.value;
-        }else if(this.node.nodeType == 3){
+        } else if (this.node.nodeType == 3) {
           this.node.nodeValue = this.value;
         }
-      },
-      get(){
+      }
+      get() {
         this.value = this.vm.data[this.name];
       }
     }
-    
+
     // contructor of vue
     function Vue(options) {
       var data = options.data;
@@ -125,12 +132,12 @@
     {{ hello }}
   </div>
   <script type="text/javascript">
-      var vue = new Vue({
-        el: '#app',
-        data: {
-          hello: "world"
-        }
-      })
+    var vue = new Vue({
+      el: '#app',
+      data: {
+        hello: "world"
+      }
+    })
   </script>
 </body>
 
