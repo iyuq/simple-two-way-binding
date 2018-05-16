@@ -98,10 +98,16 @@
         this.name = name;
         this.node = node;
         this.vm = vm;
+        this.dirty = false;
         this.update();
         Dep.target = null;
       }
       update() {
+        if(this.node === null) {
+          this.dirty = true;
+          this.get();
+          return;
+        }
         this.get();
         if (this.node.nodeType == 1) {
           this.node.value = this.value;
@@ -119,6 +125,29 @@
       var data = options.data;
       this.data = {};
       new obeserve(data, this);
+      const vm = this;
+      if (options.computed) {
+        for (let key of Object.keys(options.computed)) {
+          let getter = options.computed[key];
+          let dep = new Dep();
+          let cached = undefined;
+          let watcher;
+          Object.defineProperty(vm.data, key, {
+            enumerable: true,
+            configurable: true,
+            get() {
+              if (Dep.target) dep.addWatcher(Dep.target);
+              if(watcher && watcher.dirty) {
+                watcher.dirty = false;
+                return cached = getter.call(vm);
+              } else {
+                return cached || (cached = getter.call(vm));
+              }
+            }
+          })
+          watcher = new Watcher(this, null, key)
+        }
+      }
       var el = options.el;
       var dom = nodeToFragment(document.querySelector(el), this);
       document.querySelector(el).appendChild(dom);
@@ -135,7 +164,14 @@
     var vue = new Vue({
       el: '#app',
       data: {
-        hello: "world"
+        hello: "world",
+        a: 20,
+        b: 30
+      },
+      computed: {
+        c: function() {
+          return this.data.a + this.data.b
+        }
       }
     })
   </script>
